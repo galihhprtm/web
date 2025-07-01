@@ -1,7 +1,7 @@
  🌐 Web Dashboard: Real-Time Object Detection Monitoring
 
 Bagian dari Skripsi:  
-**"Sistem Deteksi Objek untuk Mengukur Atensi pada Lingkungan Reklame Iklan Berbasis YOLOv5 Small (Studi Kasus: PT. Utero Kreatif Indonesia)"**
+**"Sistem Deteksi Objek untuk Mengukur Atensi pada Lingkungan Reklame Iklan Berbasis YOLOv5 dan ByteTrack"**
 
 Repositori ini berisi **Web Dashboard** untuk memantau dan menganalisis hasil deteksi dan tracking objek secara **real-time** menggunakan data dari sistem YOLOv5 + ByteTrack.
 

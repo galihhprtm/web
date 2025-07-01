@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Indonesia Dashboard</title>
+  <link rel="icon" href="logo.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Firebase & Chart.js -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="header-content">
+      <img src="logo_polinema.png" alt="Logo Kiri" class="logo-left">
+        <h1>INDONESIA ANALYTICS DASHBOARD</h1>
+      <img src="logo-blu-speed.png" alt="Logo Kanan" class="logo-right">
+    </div>
+  </header>
+
+  <section class="hero">
+    Melihat Indonesia Lewat Data
+  </section>
+
+  <section class="container">
+    <div id="realtime-clock" style="font-size: 40px; font-weight: bold; margin-bottom: 2px; text-align: center;">
+      <span id="clock"></span>
+    </div>
+    <div class="grid">
+      <!-- Kartu statistik -->
+      <div class="card">
+        <img src="https://cdn-icons-png.flaticon.com/512/1946/1946429.png" alt="Orang">
+        <div class="card-text">
+          <h3>JUMLAH ORANG</h3>
+          <span id="totalOrang">0</span>
+        </div>
+      </div>
+      <div class="card">
+        <img src="car.png" alt="Mobil">
+        <div class="card-text">
+          <h3>JUMLAH MOBIL</h3>
+          <span id="totalMobil">0</span>
+        </div>
+      </div>
+      <div class="card">
+        <img src="motor.png" alt="Motor">
+        <div class="card-text">
+          <h3>JUMLAH MOTOR</h3>
+          <span id="totalMotor">0</span>
+        </div>
+      </div>
+    </div>
+
+    <section class="heri">Statistic Result</section>
+
+    <div class="filter">
+      <label for="filterTanggal">Tampilkan data tanggal:</label>
+      <input type="date" id="filterTanggal">
+      <button onclick="filterDataTanggal()">Tampilkan</button>
+    </div>
+
+    <canvas id="grafikOrang"></canvas>
+    <canvas id="grafikMobil"></canvas>
+    <canvas id="grafikMotor"></canvas>
+    <canvas id="grafikKeramaian"></canvas>
+  </section>
+
+  <footer>
+    &copy; 2025 Indonesia Visionary. Powered by Politeknik Negeri Malang.
+  </footer>
+
+  <!-- Firebase Firestore JS -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDFqTPNjWDSB2qnyrQCwZRuUAd5cF1K-Y8",
+      authDomain: "detect-storage.firebaseapp.com",
+      projectId: "detect-storage",
+      storageBucket: "detect-storage.appspot.com",
+      messagingSenderId: "773045525935",
+      appId: "1:773045525935:web:b3f730db46e5f43c33235a"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function updateClock() {
+      const now = new Date();
+      const jam = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      document.getElementById('clock').textContent = jam;
+    }
+    // Update jam setiap detik
+    setInterval(updateClock, 1000);
+    updateClock(); // panggil sekali langsung supaya muncul langsung
+
+    let charts = {};
+    function renderMultipleChart(data6jam) {
+      const waktu = data6jam.map(d => d.waktu);
+      const total = data6jam.map(d => d.total);
+      const orang = data6jam.map(d => d.orang);
+      const mobil = data6jam.map(d => d.mobil);
+      const motor = data6jam.map(d => d.motor);
+
+      const chartConfig = (label, data, bgColor, borderColor) => ({
+        type: 'line',
+        data: {
+          labels: waktu,
+          datasets:[{
+            label,
+            data,
+            fill: true,
+            backgroundColor: bgColor,
+            borderColor: borderColor,
+            tension: 0.4,
+          }]
+        },
+        options:{
+          responsive: true,
+          scales:{
+            x: { ticks: { color: '#333' } },
+            y: { ticks: { color: '#333' }, beginAtZero: true }
+          }
+        }
+      });
+
+      const canvasIds = ['grafikOrang', 'grafikMobil', 'grafikMotor', 'grafikKeramaian'];
+      const labels = ['Jumlah Orang', 'Jumlah Mobil', 'Jumlah Motor', 'Total Keramaian'];
+      const datasets = [orang, mobil, motor, total];
+      const colors = [
+        ['rgba(25, 118, 210, 0.1)', '#1976d2'], // Biru – Orang
+        ['rgba(46, 125, 50, 0.1)', '#2e7d32'],  // Hijau – Mobil
+        ['rgba(255, 143, 0, 0.1)', '#ff8f00'],  // Oranye – Motor
+        ['rgba(211, 47, 47, 0.1)', '#d32f2f'],  // Merah – Total Keramaian
+      ];
+
+      canvasIds.forEach((id, i) => {
+        const ctx = document.getElementById(id).getContext('2d');
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(ctx, chartConfig(labels[i], datasets[i], colors[i][0], colors[i][1]));
+      });
+    }
+
+    let unsubscribe = null;
+    function filterDataTanggal() {
+      const tanggal = document.getElementById("filterTanggal").value;
+      if (!tanggal) return;
+      if (unsubscribe) unsubscribe();
+      unsubscribe = db.collection("detections")
+        .orderBy("timestamp", "asc")
+        .onSnapshot(snapshot => {
+          let orang = 0, mobil = 0, motor = 0;
+          const grafikData = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            if (data.timestamp?.startsWith(tanggal)) {
+              orang += data.counts?.Orang || 0;
+              mobil += data.counts?.Mobil || 0;
+              motor += data.counts?.Motor || 0;
+              grafikData.push({
+                waktu: data.timestamp.split(" ")[1].slice(0, 5),
+                orang: data.counts?.Orang || 0,
+                mobil: data.counts?.Mobil || 0,
+                motor: data.counts?.Motor || 0,
+                total: (data.counts?.Orang || 0) + (data.counts?.Mobil || 0) + (data.counts?.Motor || 0)
+              });
+            }
+          });
+          document.getElementById("totalOrang").textContent = orang;
+          document.getElementById("totalMobil").textContent = mobil;
+          document.getElementById("totalMotor").textContent = motor;
+          renderMultipleChart(grafikData);
+        });
+    }
+
+    window.onload = () => {
+      const today = new Date().toISOString().split("T")[0];
+      document.getElementById("filterTanggal").value = today;
+      filterDataTanggal();
+    }
+  </script>
+</body>
+</html>

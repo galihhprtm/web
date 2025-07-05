@@ -1,4 +1,5 @@
  🌐 Web Dashboard: Real-Time Object Detection Monitoring
+ Link: https://detect-storage.web.app/
 
 Bagian dari Skripsi:  
 **"Sistem Deteksi Objek untuk Mengukur Atensi pada Lingkungan Reklame Iklan Berbasis YOLOv5 dan ByteTrack"**
